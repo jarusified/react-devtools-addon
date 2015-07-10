@@ -1,0 +1,13 @@
+{
+  "title": "react-devtools-addon",
+  "name": "react-devtools-addon",
+  "version": "0.0.1",
+  "description": "firefox extension of react-devtools",
+  "main": "index.js",
+  "author": "jarus",
+  "engines": {
+    "firefox": ">=38.0a1",
+    "fennec": ">=38.0a1"
+  },
+  "license": "MIT"
+}
