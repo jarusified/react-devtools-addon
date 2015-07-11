@@ -1,7 +1,7 @@
 "use strict";
 
 const { Cu, Ci } = require("chrome");
-const { Panel } = require("dev/panel.js");
+const { Panel } = require("dev/panel");
 const { Class } = require("sdk/core/heritage");
 const { Tool } = require("dev/toolbox");
 
@@ -9,8 +9,7 @@ var tabs  = require("sdk/tabs");
 var mod   = require("sdk/page-mod");
 var self  = require("sdk/self");
 
-const ReactPanel = Class(
-{
+const ReactPanel = Class({
   extends: Panel,
 
   label: "React",
@@ -19,10 +18,14 @@ const ReactPanel = Class(
   url: "./index.html",
 
   initialize: function(options) {
+    console.log("there there");
 
   },
 
   dispose: function() {
+    console.log("MyPanel.destroy " + this.debuggee);
+    this.debuggee=null;
+    console.log("MyPanel.destroy " + this.debuggee);
 
   },
 
@@ -38,23 +41,21 @@ const ReactPanel = Class(
   }
 });
 // test url 
-var pageUrl = self.data.url("https://facebook.github.io/react/");
 
 var pageMod = mod.PageMod({
-  include: pageUrl,
+  include: "*",
   contentScriptFile: self.data.url("inspector.js"),
+  contentScriptWhen: "ready",
   onMessage: function(contentScriptMessage){
-  	//detect the react environment 
   	if(contentScriptMessage=="react"){
   		const ReactTool = new Tool({
   			name: "ReactTool",
   			panels: {
     			myPanel: ReactPanel
-  			}	
-		});
+  			},
+      });
   	}
   }
 });
 
 
-tabs.open(pageUrl);
