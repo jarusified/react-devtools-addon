@@ -8,38 +8,23 @@ const { Tool } = require("dev/toolbox");
 var tabs  = require("sdk/tabs");
 var mod   = require("sdk/page-mod");
 var self  = require("sdk/self");
+var index = require("./index");
 
-const ReactPanel = Class({
-  extends: Panel,
 
-  label: "React",
-  tooltip: "My panel tooltip",
-  icon: "./icon-16.png",
-  url: "./index.html",
+let ReactDevtools = {
+  initialize: function (iframeWindow, toolbox) {
+    console.debug("initialize");
+    this.iframeWindow = iframeWindow.document.querySelector("iframe");
+    this.toolbox = toolbox;
 
-  initialize: function(options) {
-    console.log("there there");
-
+    this.iframeWindow.setAttribute("src", self.data.url("data/index.html"));
   },
-
-  dispose: function() {
-    console.log("MyPanel.destroy " + this.debuggee);
-    this.debuggee=null;
-    console.log("MyPanel.destroy " + this.debuggee);
-
-  },
-
-  setup: function(options) {
-    console.log("MyPanel.setup" + options.debuggee);
-
-    this.debuggee = options.debuggee;
-
-  },
-
-  onReady: function() {
-    console.log("MyPanel.onReady " + this.debuggee);
-  }
-});
+    
+  destroy : function() {
+    log('destroyin...');
+    this.iframeWindow.setAttribute('src', 'about:blank');
+  }   
+};
 // test url 
 
 var pageMod = mod.PageMod({
@@ -48,12 +33,7 @@ var pageMod = mod.PageMod({
   contentScriptWhen: "ready",
   onMessage: function(contentScriptMessage){
   	if(contentScriptMessage=="react"){
-  		const ReactTool = new Tool({
-  			name: "ReactTool",
-  			panels: {
-    			myPanel: ReactPanel
-  			},
-      });
+      index.start();
   	}
   }
 });
