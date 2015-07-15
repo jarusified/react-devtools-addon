@@ -1,14 +1,20 @@
-"use strict";
+var { Cu, Cc, Ci } = require("chrome");
+const { devtoolTabDefinition } = require('./reactAddOn');
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-const { reactAddOn } = require('./reactAddOn');
-const { reactPanel } = require('./reactAddOnPanel');
+XPCOMUtils.defineLazyModuleGetter(this, "gDevTools","resource:///modules/devtools/gDevTools.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "gDevToolsBrowser","resource:///modules/devtools/gDevTools.jsm");
 
-exports.start=function start(options,callback){
-	reactAddOn.initialize.apply(reactAddOn, [options]);
+startup();
+
+function startup(){
+	gDevTools.registerTool(devtoolTabDefinition);
 }
 
-exports.onUnload = function onUnload(reason){
-	reactAddOn.shutdown(reason);
+function shutdown(){
+	gDevTools.unregisterTool(devtoolTabDefinition);
 }
 
-
+exports.onUnLoad = function(){
+	shutdown();
+}

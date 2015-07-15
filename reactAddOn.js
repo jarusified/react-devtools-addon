@@ -1,20 +1,11 @@
-"use strict";
-
-try { Cu.import("resource://gre/modules/commonjs/promise/core.js"); } catch(e) {}
-try { Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js"); } catch(e) {}
-
-
-const { Cu } = require("chrome");
-const { gDevtools } = Cu.import("resource:///modules/devtools/gDevTools.jsm");
-const self = require("sdk/self");
-var tabs = require("sdk/tabs");
-var workers = require("sdk/content/worker");
-var Promise = require("sdk/core/promise");
-var ReactDevtools = require('./reactAddOnPanel');
+const { Class } = require("sdk/core/heritage");
+const self      = require("sdk/self");
+const tabs      = require('reactAddOnPanel');
+var Promise = require("sdk/core/promise.js");
 
 
-var devtoolTabDefinition ={
-  id: "React-Devtool",
+exports.devtoolTabDefinition ={
+  	id: "React-Devtool",
     url: self.data.url("index.html"),
     label: "React",
     tooltip: "React Devtools",
@@ -25,35 +16,56 @@ var devtoolTabDefinition ={
 
     build: function(iframeWindow, toolbox) {
       console.log("building");
-      ReactDevtools.initialize(iframeWindow, toolbox);
+      var reactDevtools = ReactDevtools.initialize(iframeWindow, toolbox);
       return Promise.resolve(ReactDevtools);
     }
 };
 
 
-var reactAddOn ={
-	initialize: function(options){
-		gDevTools.on("toolbox-ready", this.onToolboxReady);
-    	gDevTools.on("toolbox-destroy", this.onToolboxDestroy);
-    	gDevTools.on("toolbox-destroyed", this.onToolboxClosed);
-	},
-	shutdown: function(reason){
-		gDevTools.off("toolbox-ready", this.onToolboxReady);
-    	gDevTools.off("toolbox-destroy", this.onToolboxDestroy);
-    	gDevTools.off("toolbox-destroyed", this.onToolboxClosed);
-	},
-	onToolboxReady: function(event,toolbox){
-		console.log("asd");
-		gDevTools.registerTool(devtoolTabDefinition);
-	},
-	onToolboxDestroy:function(event,target){
-		gDevTools.unregisterTool(devtoolTabDefinition);
-	},
-	onToolboxClosed:function(event,target){
-		gDevTools.unregisterTool(devtoolTabDefinition);
-	}
-}
+let reactDevtools = Class({
+	initialize: function(iframeWindow,toolbox){
+		console.log("initiate");
+		this.iframeParent = iframeWindow;
+		this.iframeWindow = iframeWindow.document.querySelector("iframe");
+		this.toolbox      = toolbox;
+		this.targetTabId = tabs.activeTab.id;
 
 
+    	this._onTargetTabLoad = this._handleTargetTabLoad.bind(this);
+    	tabs.on("reactAttach", this._onTargetTabLoad);
 
-exports.reactAddOn=reactAddOn;
+    	tabs.attachExistentWorkersByTabId(tabs.activeTab.id);
+
+    	return this;
+	},
+	destroy: function () {
+    	console.log("destroy");
+    	tabs.removeListener("reactAttach", this._onTargetTabLoad);
+  	},
+  	 _handleTargetTabLoad: function({ tabId: tabId, worker: worker }) {
+    	if (this.targetTabId !== tabId) {
+      		return;
+    	}
+
+    	tabs.sendToWorkersByTabId(tabId, "injectReactDebug", null);
+
+    	this.iframeWindow.contentWindow.location.reload(true);
+  	},
+	_sendToTargetTab: function(msg) {
+
+    	this.mqTargetTab = this.mqTargetTab || [];
+
+	    if (msg) {
+    	  this.mqTargetTab.push(msg);
+    	}
+
+    	if (tabs.hasWorkersByTabId(this.targetTabId)) {
+      		let nextMsg;
+      		while ((nextMsg = this.mqTargetTab.shift())) {
+        		tabs.sendToWorkersByTabId(this.targetTabId, "reactDevTool", nextMsg);
+      		}
+    	}
+  	}
+});
+
+
